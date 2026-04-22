@@ -9,22 +9,20 @@ import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged }
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
 
 // --- FIREBASE INITIALIZATION ---
-const firebaseConfig = {
-  apiKey: "AIzaSyCuK3-2ztkWaf5YAniEdzw94uT-ROr_Cqg",
-  authDomain: "dfn-dikili.firebaseapp.com",
-  projectId: "dfn-dikili",
-  storageBucket: "dfn-dikili.firebasestorage.app",
-  messagingSenderId: "707191398819",
-  appId: "1:707191398819:web:19a5af8134d502347efa16"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = 'dfn-sirket-hesabi'; 
+let app, auth, db, appId;
+try {
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+  appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  if (Object.keys(firebaseConfig).length > 0) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  }
+} catch (e) {
+  console.error("Firebase başlatılma hatası:", e);
+}
 
 // --- TARİH FORMATLAMA YARDIMCISI ---
-
 const formatDate = (dateStr) => {
   if (!dateStr) return '-';
   const parts = dateStr.split('-');
@@ -126,13 +124,13 @@ export default function App() {
       try {
           const exportData = { dikili_satis_projects: [], tapulu_kesim_jobs: [], muhendislik_projeleri: [] };
           
-          const dikiliSnap = await getDocs(collection(db, 'artifacts', appId, 'users', user.uid, 'dikili_satis_projects'));
+          const dikiliSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'dikili_satis_projects'));
           dikiliSnap.forEach(document => exportData.dikili_satis_projects.push(document.data()));
           
-          const tapuluSnap = await getDocs(collection(db, 'artifacts', appId, 'users', user.uid, 'tapulu_kesim_jobs'));
+          const tapuluSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'tapulu_kesim_jobs'));
           tapuluSnap.forEach(document => exportData.tapulu_kesim_jobs.push(document.data()));
 
-          const muhSnap = await getDocs(collection(db, 'artifacts', appId, 'users', user.uid, 'muhendislik_projeleri'));
+          const muhSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'muhendislik_projeleri'));
           muhSnap.forEach(document => exportData.muhendislik_projeleri.push(document.data()));
 
           const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData));
@@ -159,20 +157,20 @@ export default function App() {
               if (user && db) {
                   if (importedData.dikili_satis_projects) {
                       for (let proj of importedData.dikili_satis_projects) {
-                          await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dikili_satis_projects', proj.id), proj);
+                          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dikili_satis_projects', proj.id), proj);
                       }
                   }
                   if (importedData.tapulu_kesim_jobs) {
                       for (let job of importedData.tapulu_kesim_jobs) {
-                          await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tapulu_kesim_jobs', job.id), job);
+                          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tapulu_kesim_jobs', job.id), job);
                       }
                   }
                   if (importedData.muhendislik_projeleri) {
                       for (let job of importedData.muhendislik_projeleri) {
-                          await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'muhendislik_projeleri', job.id), job);
+                          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'muhendislik_projeleri', job.id), job);
                       }
                   }
-                  showToast("Veriler başarıyla sisteme yüklendi!");
+                  showToast("Veriler başarıyla Ortak Havuza yüklendi!");
               }
           } catch (err) {
               console.error(err);
@@ -296,7 +294,7 @@ function DikiliSatisTakip({ user, db, appId, showToast }) {
 
   useEffect(() => {
     if (!user || !db) return;
-    return onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'dikili_satis_projects'), (snapshot) => {
+    return onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'dikili_satis_projects'), (snapshot) => {
        const data = []; snapshot.forEach(doc => data.push(doc.data()));
        setProjects(data.sort((a, b) => b.createdAt - a.createdAt));
        if (activeProject) setActiveProject(data.find(p => p.id === activeProject.id));
@@ -317,7 +315,7 @@ function DikiliSatisTakip({ user, db, appId, showToast }) {
           kamyonlar: [], kesimOdemeleri: [], nakliyeOdemeleri: [], digerGiderler: []
       };
       if(user && db) { 
-          await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dikili_satis_projects', newProj.id), newProj); 
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dikili_satis_projects', newProj.id), newProj); 
           setShowAddModal(false); 
           setNewProjectName(''); 
           setActiveProject(newProj);
@@ -402,7 +400,7 @@ function DikiliSatisDetay({ project, onBack, user, db, appId, showToast }) {
             try {
                 // Firebase'in eski/hatalı verilerdeki tanımsız (undefined) değerleri reddetmesini engeller
                 const safeValue = JSON.parse(JSON.stringify(value));
-                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dikili_satis_projects', project.id), { [field]: safeValue }, { merge: true }); 
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dikili_satis_projects', project.id), { [field]: safeValue }, { merge: true }); 
             } catch (err) {
                 console.error("Firebase Update Error:", err);
                 showToast("Veritabanı güncelleme hatası. Veri formatı bozuk olabilir.");
@@ -424,7 +422,7 @@ function DikiliSatisDetay({ project, onBack, user, db, appId, showToast }) {
         setDeleteModal(null);
     };
 
-    const saveSettings = async () => { if(user && db) { await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dikili_satis_projects', project.id), settings, { merge: true }); showToast("Tahmin ve maliyet ayarları kaydedildi."); } };
+    const saveSettings = async () => { if(user && db) { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dikili_satis_projects', project.id), settings, { merge: true }); showToast("Tahmin ve maliyet ayarları kaydedildi."); } };
 
     const uniquePlakalar = useMemo(() => [...new Set(kamyonlar.map(k => k.plaka).filter(Boolean).map(p => p.toLocaleUpperCase('tr-TR')))], [kamyonlar]);
     const uniqueFirmalar = useMemo(() => [...new Set(kamyonlar.map(k => k.firma || k.musteri).filter(Boolean).map(f => f.toLocaleUpperCase('tr-TR')))], [kamyonlar]);
@@ -1462,10 +1460,10 @@ function TapuluKesimTakip({ user, db, appId, showToast }) {
 
   useEffect(() => {
     if (!user || !db) return;
-    const unsubJobs = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'tapulu_kesim_jobs'), (snap) => {
+    const unsubJobs = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'tapulu_kesim_jobs'), (snap) => {
       setJobs(snap.docs.map(d => d.data()).sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0)));
     });
-    const unsubPrices = onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'tk_prices'), (docSnap) => {
+    const unsubPrices = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'tk_prices'), (docSnap) => {
       if (docSnap.exists()) setPrices(docSnap.data());
     });
     return () => { unsubJobs(); unsubPrices(); };
@@ -1531,7 +1529,7 @@ function TapuluKesimTakip({ user, db, appId, showToast }) {
 
   const confirmDeleteAction = async () => { 
       if(user && db && deleteModalId) {
-          await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tapulu_kesim_jobs', deleteModalId));
+          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tapulu_kesim_jobs', deleteModalId));
           setDeleteModalId(null);
           showToast("Kayıt başarıyla silindi.");
       }
@@ -1539,7 +1537,7 @@ function TapuluKesimTakip({ user, db, appId, showToast }) {
 
   const handleSavePrices = async () => {
      if (user && db) {
-        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'tk_prices'), prices);
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'tk_prices'), prices);
         showToast("Birim fiyat ayarları ve formüller güncellendi!");
         setShowPriceModal(false);
      }
@@ -1562,7 +1560,7 @@ function TapuluKesimTakip({ user, db, appId, showToast }) {
     const jobData = { ...formData, siraNo, dosyaParasi: dosya, isletmeyeYatacak: isletme, toplam, soylenen, alinanUcret: alinan, kalanUcret, id: editingId || `tk_${Date.now()}` };
     
     if (user && db) {
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tapulu_kesim_jobs', jobData.id), jobData);
+      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tapulu_kesim_jobs', jobData.id), jobData);
       setShowModal(false); showToast("Kayıt başarıyla kaydedildi!");
     }
   };
@@ -1950,7 +1948,7 @@ function MuhendislikTakip({ user, db, appId, showToast }) {
 
   useEffect(() => {
     if (!user || !db) return;
-    const unsubJobs = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'muhendislik_projeleri'), (snap) => {
+    const unsubJobs = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'muhendislik_projeleri'), (snap) => {
       setJobs(snap.docs.map(d => d.data()).sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0)));
     });
     return () => unsubJobs();
@@ -1999,7 +1997,7 @@ function MuhendislikTakip({ user, db, appId, showToast }) {
 
   const confirmDeleteAction = async () => {
     if (user && db && deleteModalId) {
-        await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'muhendislik_projeleri', deleteModalId));
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'muhendislik_projeleri', deleteModalId));
         setDeleteModalId(null);
         showToast("Kayıt başarıyla silindi.");
     }
@@ -2029,7 +2027,7 @@ function MuhendislikTakip({ user, db, appId, showToast }) {
     };
 
     if (user && db) {
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'muhendislik_projeleri', jobData.id), jobData);
+      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'muhendislik_projeleri', jobData.id), jobData);
       setShowModal(false); showToast("Kayıt başarıyla kaydedildi!");
     }
   };
