@@ -9,16 +9,7 @@ import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged }
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
 
 // --- FIREBASE INITIALIZATION ---
-let app, auth, db, appId;
-try {
-  // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// ⚠️ DİKKAT: Kendi Firebase bilgilerinizi aşağıdaki tırnak içlerine yapıştırın!
 const firebaseConfig = {
   apiKey: "AIzaSyCuK3-2ztkWaf5YAniEdzw94uT-ROr_Cqg",
   authDomain: "dfn-dikili.firebaseapp.com",
@@ -29,9 +20,15 @@ const firebaseConfig = {
   measurementId: "G-9V6N4XCHH2"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+let app, auth, db, appId;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  appId = 'dfn-sirket-hesabi';
+} catch (e) {
+  console.error("Firebase başlatılma hatası:", e);
 }
 
 // --- TARİH FORMATLAMA YARDIMCISI ---
@@ -183,6 +180,8 @@ export default function App() {
                       }
                   }
                   showToast("Veriler başarıyla Ortak Havuza yüklendi!");
+              } else {
+                  showToast("Bağlantı hatası! Lütfen Firebase bilgilerinizi kontrol edin.");
               }
           } catch (err) {
               console.error(err);
