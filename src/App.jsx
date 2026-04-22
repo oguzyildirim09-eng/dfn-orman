@@ -11,15 +11,27 @@ import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs }
 // --- FIREBASE INITIALIZATION ---
 let app, auth, db, appId;
 try {
-  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-  appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-  if (Object.keys(firebaseConfig).length > 0) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-  }
-} catch (e) {
-  console.error("Firebase başlatılma hatası:", e);
+  // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCuK3-2ztkWaf5YAniEdzw94uT-ROr_Cqg",
+  authDomain: "dfn-dikili.firebaseapp.com",
+  projectId: "dfn-dikili",
+  storageBucket: "dfn-dikili.firebasestorage.app",
+  messagingSenderId: "707191398819",
+  appId: "1:707191398819:web:19a5af8134d502347efa16",
+  measurementId: "G-9V6N4XCHH2"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 }
 
 // --- TARİH FORMATLAMA YARDIMCISI ---
